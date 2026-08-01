@@ -1,0 +1,6 @@
+factor,label,contribution
+active_customers,Active customers,-34325.08
+orders_per_customer,Orders per customer,-21623.42
+units_per_order,Units per order,-2864.84
+avg_unit_price,Average unit price,7333.46
+revenue_retained,Return retention,-7287.77

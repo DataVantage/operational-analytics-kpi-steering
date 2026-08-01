@@ -1,0 +1,6 @@
+factor,label,meaning,value_comparison,value_current,change_pct,contribution,share_of_change_pct
+active_customers,Active customers,How many identified customers bought at all,725.0,639.0,-11.86,-32687.27,55.62
+orders_per_customer,Orders per customer,How often each buying customer ordered,2.4828,2.2723,-8.48,-22934.77,39.03
+units_per_order,Units per order,Basket size in units,34.0494,33.6315,-1.23,-3196.91,5.44
+avg_unit_price,Average unit price,"Realised price per unit, mix included",4.829,4.9826,3.18,8105.97,-13.79
+revenue_retained,Return retention,Share of gross revenue not lost to returns,0.977698,0.947746,-3.06,-8054.68,13.71

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operational Analytics & KPI Steering - 2011-11</title>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+<style>
+  :root {
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --bg:#f8fafc;
+    --card:#ffffff; --accent:#0d9488; --bad:#be123c; --good:#15803d; --warn:#b45309;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  }
+  .wrap { max-width:1240px; margin:0 auto; padding:32px 24px 80px; }
+  header { border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:24px; }
+  h1 { font-size:26px; margin:0 0 6px; letter-spacing:-0.02em; }
+  h2 { font-size:17px; margin:0 0 4px; letter-spacing:-0.01em; }
+  .sub { color:var(--muted); font-size:13.5px; }
+  .banner {
+    background:#fffbeb; border:1px solid #fcd34d; color:#78350f;
+    padding:12px 16px; border-radius:10px; margin:16px 0 0; font-size:13.5px;
+  }
+  .banner code { background:#fef3c7; padding:1px 5px; border-radius:4px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin:24px 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .card .lbl { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  .card .val { font-size:27px; font-weight:640; margin:6px 0 2px; letter-spacing:-0.02em; }
+  .card .val span { font-size:14px; font-weight:500; color:var(--muted); margin-left:3px; }
+  .card .dlt { font-size:13px; font-weight:600; }
+  .card .note { font-size:12px; color:var(--muted); margin-top:2px; }
+  .up { color:var(--good); } .down { color:var(--bad); } .flat { color:var(--muted); }
+  section { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-top:18px; }
+  .lead { color:var(--muted); font-size:13.5px; margin:4px 0 14px; max-width:78ch; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:900px) { .grid2 { grid-template-columns:1fr; } }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { padding:7px 10px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th:first-child, td:first-child, th.l, td.l { text-align:left; }
+  th { font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; }
+  tbody tr:hover { background:#f1f5f9; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  .pill.blocker { background:#fee2e2; color:#991b1b; }
+  .pill.major { background:#ffedd5; color:#9a3412; }
+  .pill.minor { background:#e0f2fe; color:#075985; }
+  .pill.ok { background:#dcfce7; color:#166534; }
+  .scroll { overflow-x:auto; }
+  footer { color:var(--muted); font-size:12.5px; margin-top:28px; border-top:1px solid var(--line); padding-top:16px; }
+  .chart { width:100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Operational Analytics & KPI Steering</h1>
+    <div class="sub">
+      Reporting period <strong>2011-11</strong> against <strong>2010-11</strong> (year over year)
+      &middot; source: SYNTHETIC DEMO SAMPLE &middot; built 2026-08-01 16:08 UTC by oakpi v1.0.0 &middot; Serkan Akdemir
+    </div>
+    <div class="banner">This build ran against the <strong>synthetic demo sample</strong>, not the real UCI dataset. It demonstrates the method; it is not a statement about real trading. Run <code>python -m oakpi data &amp;&amp; python -m oakpi run</code> to rebuild from the real source.</div>
+  </header>
+
+  <div class="cards" id="cards"></div>
+
+  <section>
+    <h2>1. What changed</h2>
+    <p class="lead">Net revenue against gross revenue and returns, by month. Months that
+      are not complete in the source are drawn faded and are never used as a reporting
+      period.</p>
+    <div id="chart-trend" class="chart"></div>
+  </section>
+
+  <section>
+    <h2>2. Why it changed</h2>
+    <p class="lead">Additive LMDI-I decomposition of the change in net revenue from
+      identified customers. The five factors multiply out to net revenue, and their
+      contributions sum to the total change with no residual, so nothing is hidden in
+      an "other" bar.</p>
+    <div id="chart-waterfall" class="chart"></div>
+    <div id="bridge"></div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2>3. Returns by product family</h2>
+      <p class="lead">Return rate as a share of gross revenue, by month.</p>
+      <div id="chart-returns" class="chart"></div>
+    </section>
+    <section>
+      <h2>4. Excess returns</h2>
+      <p class="lead">Value the current period would have kept at the comparison
+        period's return rate.</p>
+      <div class="scroll"><table id="tbl-returns"></table></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2>5. Where the change sits by market</h2>
+      <p class="lead">Change in net revenue by country. "Unidentified" is guest
+        revenue, kept in view so the slice reconciles to the headline.</p>
+      <div id="chart-country" class="chart"></div>
+    </section>
+    <section>
+      <h2>6. Revenue concentration by article</h2>
+      <p class="lead">Bars are net revenue in the current period, the line is the
+        cumulative share of it.</p>
+      <div id="chart-pareto" class="chart"></div>
+    </section>
+  </div>
+
+  <section>
+    <h2>7. Cohort retention</h2>
+    <p class="lead">Share of each acquisition cohort still buying n months after its
+      first order. Cohorts under 20 customers are suppressed. This is what separates
+      "a weak month" from "a shrinking base".</p>
+    <div id="chart-cohort" class="chart"></div>
+  </section>
+
+  <section>
+    <h2>8. Largest article declines</h2>
+    <div class="scroll"><table id="tbl-decliners"></table></div>
+  </section>
+
+  <section>
+    <h2>9. Can these numbers be trusted</h2>
+    <p class="lead">Every rule below is declared in <code>config/dq_rules.yml</code>
+      with a written rationale. Quarantined rows are excluded from all KPIs and remain
+      retrievable from the <code>quarantine</code> table together with the rule that
+      removed them.</p>
+    <div class="scroll"><table id="tbl-dq"></table></div>
+    <h2 style="margin-top:22px">Reconciliation</h2>
+    <p class="lead">The fact table against the published KPI mart. The pipeline aborts
+      rather than publishing if any difference exceeds 0.05.</p>
+    <div class="scroll"><table id="tbl-recon"></table></div>
+  </section>
+
+  <footer>
+    Generated by <code>oakpi</code> v1.0.0. All figures are read from the marts at
+    build time. Source data: SYNTHETIC DEMO SAMPLE.
+  </footer>
+</div>
+
+<script>
+const P = {"ink": "#0f172a", "muted": "#64748b", "line": "#e2e8f0", "accent": "#0d9488", "accent_soft": "#99f6e4", "warn": "#b45309", "bad": "#be123c", "good": "#15803d", "neutral": "#94a3b8"};
+const D = {"meta": {"project": "Operational Analytics & KPI Steering", "owner": "Serkan Akdemir", "currency": "GBP", "version": "1.0.0", "generated_at": "2026-08-01 16:08 UTC", "source_label": "SYNTHETIC DEMO SAMPLE", "is_synthetic": true, "current_label": "2011-11", "comparison_label": "2010-11", "comparison_mode": "yoy", "retention_horizon": 3}, "cards": [{"label": "Net revenue", "value": "283,005", "unit": "GBP", "delta": {"text": "-24.9%", "good": false}, "note": "vs 2010-11"}, {"label": "Return rate", "value": "5.33", "unit": "%", "delta": {"text": "+3.17 pp", "good": false}, "note": "of gross revenue"}, {"label": "Active customers", "value": "639", "unit": "", "delta": {"text": "-11.9%", "good": false}, "note": "identified only"}, {"label": "Orders", "value": "1,844", "unit": "", "delta": {"text": "-19.5%", "good": false}, "note": "excl. credit notes"}, {"label": "Average order value", "value": "153.47", "unit": "GBP", "delta": {"text": "-6.7%", "good": false}, "note": "net of returns"}, {"label": "Data quality score", "value": "99.1", "unit": "/100", "delta": {"text": "0.71% quarantined", "good": null}, "note": "severity weighted"}], "trend": {"labels": ["2009-12", "2010-01", "2010-02", "2010-03", "2010-04", "2010-05", "2010-06", "2010-07", "2010-08", "2010-09", "2010-10", "2010-11", "2010-12", "2011-01", "2011-02", "2011-03", "2011-04", "2011-05", "2011-06", "2011-07", "2011-08", "2011-09", "2011-10", "2011-11", "2011-12"], "net_revenue": [32195.28, 37285.49, 53153.87, 95594.42, 112867.08, 166443.13, 156021.77, 161186.06, 179259.64, 202903.46, 273475.68, 376904.79, 303837.23, 136803.57, 132061.25, 187622.58, 187541.22, 215809.26, 211156.55, 202768.32, 161331.18, 215487.12, 213629.77, 283004.65, 61851.37], "gross_revenue": [32498.22, 38539.46, 54454.12, 117533.42, 115268.84, 169202.08, 159286.46, 165612.78, 183735.67, 207235.31, 278690.51, 385211.95, 312102.74, 142231.29, 135795.67, 192376.03, 192055.89, 220731.23, 216091.55, 207049.1, 167856.23, 224852.46, 242715.59, 298936.45, 66262.38], "returns": [302.94, 1253.97, 1300.25, 21939.0, 2401.76, 2758.95, 3264.69, 4426.72, 4476.03, 4331.85, 5214.83, 8307.16, 8265.51, 5427.72, 3734.42, 4753.45, 4514.67, 4921.97, 4935.0, 4280.78, 6525.05, 9365.34, 29085.82, 15931.8, 4411.01], "return_rate": [0.9322, 3.2537, 2.3878, 18.6662, 2.0836, 1.6306, 2.0496, 2.6729, 2.4361, 2.0903, 1.8712, 2.1565, 2.6483, 3.8161, 2.75, 2.4709, 2.3507, 2.2298, 2.2838, 2.0675, 3.8873, 4.1651, 11.9835, 5.3295, 6.6569], "active_customers": [86, 127, 178, 290, 350, 370, 452, 485, 487, 537, 623, 725, 720, 495, 483, 570, 554, 575, 552, 553, 503, 545, 603, 639, 325], "orders": [215, 246, 358, 683, 732, 870, 1040, 1030, 1042, 1306, 1671, 2292, 2036, 960, 933, 1236, 1202, 1337, 1293, 1203, 1043, 1249, 1488, 1844, 442], "aov": [149.75, 151.57, 148.47, 139.96, 154.19, 191.31, 150.02, 156.49, 172.03, 155.36, 163.66, 164.44, 149.23, 142.5, 141.54, 151.8, 156.02, 161.41, 163.31, 168.55, 154.68, 172.53, 143.57, 153.47, 139.94], "is_complete": [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0], "current_label": "2011-11", "comparison_label": "2010-11"}, "waterfall": {"labels": ["Active customers", "Orders per customer", "Units per order", "Average unit price", "Return retention"], "contributions": [-32687.27, -22934.77, -3196.91, 8105.97, -8054.68], "change_pct": [-11.86, -8.48, -1.23, 3.18, -3.06], "shares": [55.62, 39.03, 5.44, -13.79, 13.71], "meanings": ["How many identified customers bought at all", "How often each buying customer ordered", "Basket size in units", "Realised price per unit, mix included", "Share of gross revenue not lost to returns"], "start": 289362.68, "end": 230599.07, "bridge": {"net_revenue_current": 283004.65, "net_revenue_comparison": 376904.79, "net_revenue_delta": -93900.14, "identified_delta": -58763.61, "guest_delta": -35136.53, "tree_residual": 4.05}}, "returns_trend": {"families": ["STORAGE", "VINTAGE", "GLASS", "LANTERN", "PAPER", "CERAMIC"], "series": {"STORAGE": {"labels": ["2009-12", "2010-01", "2010-02", "2010-03", "2010-04", "2010-05", "2010-06", "2010-07", "2010-08", "2010-09", "2010-10", "2010-11", "2010-12", "2011-01", "2011-02", "2011-03", "2011-04", "2011-05", "2011-06", "2011-07", "2011-08", "2011-09", "2011-10", "2011-11", "2011-12"], "rate": [1.02, 4.38, 3.43, 3.6, 1.65, 1.61, 2.28, 3.66, 2.4, 1.71, 1.89, 2.87, 2.56, 4.04, 2.25, 1.87, 1.99, 1.91, 2.33, 2.48, 2.63, 2.1, 2.37, 3.38, 5.01]}, "VINTAGE": {"labels": ["2009-12", "2010-01", "2010-02", "2010-03", "2010-04", "2010-05", "2010-06", "2010-07", "2010-08", "2010-09", "2010-10", "2010-11", "2010-12", "2011-01", "2011-02", "2011-03", "2011-04", "2011-05", "2011-06", "2011-07", "2011-08", "2011-09", "2011-10", "2011-11", "2011-12"], "rate": [1.49, 2.19, 1.17, 120.67, 2.96, 1.52, 1.8, 2.11, 2.04, 2.76, 3.1, 2.06, 2.64, 4.61, 3.51, 3.13, 1.93, 1.97, 3.01, 2.17, 1.61, 2.52, 3.62, 3.14, 4.99]}, "GLASS": {"labels": ["2009-12", "2010-01", "2010-02", "2010-03", "2010-04", "2010-05", "2010-06", "2010-07", "2010-08", "2010-09", "2010-10", "2010-11", "2010-12", "2011-01", "2011-02", "2011-03", "2011-04", "2011-05", "2011-06", "2011-07", "2011-08", "2011-09", "2011-10", "2011-11", "2011-12"], "rate": [0.45, 3.96, 2.12, 1.36, 1.63, 2.04, 1.81, 2.0, 1.63, 2.82, 2.32, 1.74, 2.72, 3.92, 3.3, 3.18, 2.98, 3.32, 2.15, 2.51, 12.0, 11.05, 18.61, 18.18, 20.16]}, "LANTERN": {"labels": ["2009-12", "2010-01", "2010-02", "2010-03", "2010-04", "2010-05", "2010-06", "2010-07", "2010-08", "2010-09", "2010-10", "2010-11", "2010-12", "2011-01", "2011-02", "2011-03", "2011-04", "2011-05", "2011-06", "2011-07", "2011-08", "2011-09", "2011-10", "2011-11", "2011-12"], "rate": [0.97, 1.31, 2.69, 1.45, 2.32, 0.45, 2.03, 1.39, 3.62, 2.14, 1.54, 1.81, 2.36, 3.21, 2.77, 3.26, 2.73, 2.13, 1.72, 2.04, 2.71, 3.08, 4.86, 4.25, 3.97]}, "PAPER": {"labels": ["2009-12", "2010-01", "2010-02", "2010-03", "2010-04", "2010-05", "2010-06", "2010-07", "2010-08", "2010-09", "2010-10", "2010-11", "2010-12", "2011-01", "2011-02", "2011-03", "2011-04", "2011-05", "2011-06", "2011-07", "2011-08", "2011-09", "2011-10", "2011-11", "2011-12"], "rate": [0.0, 1.43, 2.06, 0.9, 2.7, 2.58, 2.31, 3.78, 2.45, 1.03, 1.77, 1.91, 3.81, 4.26, 3.72, 2.56, 2.65, 1.55, 1.42, 1.3, 2.04, 1.13, 2.4, 2.45, 4.73]}, "CERAMIC": {"labels": ["2009-12", "2010-01", "2010-02", "2010-03", "2010-04", "2010-05", "2010-06", "2010-07", "2010-08", "2010-09", "2010-10", "2010-11", "2010-12", "2011-01", "2011-02", "2011-03", "2011-04", "2011-05", "2011-06", "2011-07", "2011-08", "2011-09", "2011-10", "2011-11", "2011-12"], "rate": [1.22, 4.46, 2.06, 1.75, 2.12, 2.0, 2.01, 3.06, 3.46, 2.68, 1.21, 1.99, 2.62, 2.9, 1.96, 1.87, 2.8, 3.02, 2.77, 1.83, 3.2, 3.26, 55.26, 3.05, 2.04]}}, "family_table": [{"product_family": "GLASS", "gross_revenue_cur": 41651.69, "gross_revenue_cmp": 60836.13, "returns_cur": 7570.8, "returns_cmp": 1059.09, "net_revenue_cur": 34080.89, "net_revenue_cmp": 59777.04, "return_rate_cur_pct": 18.18, "return_rate_cmp_pct": 1.74, "excess_returns_value": 6845.69}, {"product_family": "LANTERN", "gross_revenue_cur": 39307.58, "gross_revenue_cmp": 47493.56, "returns_cur": 1670.69, "returns_cmp": 861.19, "net_revenue_cur": 37636.89, "net_revenue_cmp": 46632.37, "return_rate_cur_pct": 4.25, "return_rate_cmp_pct": 1.81, "excess_returns_value": 957.93}, {"product_family": "VINTAGE", "gross_revenue_cur": 44449.08, "gross_revenue_cmp": 71526.25, "returns_cur": 1393.55, "returns_cmp": 1473.0, "net_revenue_cur": 43055.53, "net_revenue_cmp": 70053.25, "return_rate_cur_pct": 3.14, "return_rate_cmp_pct": 2.06, "excess_returns_value": 478.17}, {"product_family": "STORAGE", "gross_revenue_cur": 93420.54, "gross_revenue_cmp": 105932.02, "returns_cur": 3160.83, "returns_cmp": 3043.87, "net_revenue_cur": 90259.71, "net_revenue_cmp": 102888.15, "return_rate_cur_pct": 3.38, "return_rate_cmp_pct": 2.87, "excess_returns_value": 476.47}, {"product_family": "CERAMIC", "gross_revenue_cur": 38508.94, "gross_revenue_cmp": 48251.29, "returns_cur": 1173.34, "returns_cmp": 962.47, "net_revenue_cur": 37335.6, "net_revenue_cmp": 47288.82, "return_rate_cur_pct": 3.05, "return_rate_cmp_pct": 1.99, "excess_returns_value": 405.2}, {"product_family": "PAPER", "gross_revenue_cur": 39219.35, "gross_revenue_cmp": 47444.63, "returns_cur": 962.59, "returns_cmp": 907.54, "net_revenue_cur": 38256.76, "net_revenue_cmp": 46537.09, "return_rate_cur_pct": 2.45, "return_rate_cmp_pct": 1.91, "excess_returns_value": 212.39}, {"product_family": "NON_PRODUCT", "gross_revenue_cur": 2379.27, "gross_revenue_cmp": 3728.07, "returns_cur": 0.0, "returns_cmp": 0.0, "net_revenue_cur": 2379.27, "net_revenue_cmp": 3728.07, "return_rate_cur_pct": 0.0, "return_rate_cmp_pct": 0.0, "excess_returns_value": 0.0}]}, "countries": [{"country": "United Kingdom", "net_revenue_cur": 203452.76, "net_revenue_cmp": 243591.92, "net_revenue_delta": -40139.16, "net_revenue_change_pct": -16.48, "active_customers_cur": 551, "active_customers_cmp": 614, "orders_cur": 1268, "orders_cmp": 1513, "return_rate_cur_pct": 5.34}, {"country": "Unidentified", "net_revenue_cur": 52405.58, "net_revenue_cmp": 87542.11, "net_revenue_delta": -35136.53, "net_revenue_change_pct": -40.14, "active_customers_cur": 0, "active_customers_cmp": 0, "orders_cur": 392, "orders_cmp": 492, "return_rate_cur_pct": 5.79}, {"country": "Germany", "net_revenue_cur": 4814.64, "net_revenue_cmp": 14003.28, "net_revenue_delta": -9188.64, "net_revenue_change_pct": -65.62, "active_customers_cur": 18, "active_customers_cmp": 29, "orders_cur": 33, "orders_cmp": 85, "return_rate_cur_pct": 2.13}, {"country": "France", "net_revenue_cur": 9111.15, "net_revenue_cmp": 11805.34, "net_revenue_delta": -2694.19, "net_revenue_change_pct": -22.82, "active_customers_cur": 21, "active_customers_cmp": 25, "orders_cur": 53, "orders_cmp": 73, "return_rate_cur_pct": 4.85}, {"country": "Belgium", "net_revenue_cur": 1699.64, "net_revenue_cmp": 3850.59, "net_revenue_delta": -2150.95, "net_revenue_change_pct": -55.86, "active_customers_cur": 8, "active_customers_cmp": 10, "orders_cur": 13, "orders_cmp": 23, "return_rate_cur_pct": 9.63}, {"country": "Australia", "net_revenue_cur": 719.39, "net_revenue_cmp": 2651.63, "net_revenue_delta": -1932.24, "net_revenue_change_pct": -72.87, "active_customers_cur": 2, "active_customers_cmp": 6, "orders_cur": 5, "orders_cmp": 17, "return_rate_cur_pct": 6.57}, {"country": "Portugal", "net_revenue_cur": 125.1, "net_revenue_cmp": 1295.83, "net_revenue_delta": -1170.73, "net_revenue_change_pct": -90.35, "active_customers_cur": 2, "active_customers_cmp": 6, "orders_cur": 2, "orders_cmp": 10, "return_rate_cur_pct": 0.0}, {"country": "EIRE", "net_revenue_cur": 3870.07, "net_revenue_cmp": 4943.47, "net_revenue_delta": -1073.4, "net_revenue_change_pct": -21.71, "active_customers_cur": 10, "active_customers_cmp": 12, "orders_cur": 30, "orders_cmp": 33, "return_rate_cur_pct": 2.59}, {"country": "Netherlands", "net_revenue_cur": 1936.48, "net_revenue_cmp": 2587.15, "net_revenue_delta": -650.67, "net_revenue_change_pct": -25.15, "active_customers_cur": 7, "active_customers_cmp": 9, "orders_cur": 16, "orders_cmp": 16, "return_rate_cur_pct": 7.91}, {"country": "Spain", "net_revenue_cur": 1873.03, "net_revenue_cmp": 2333.85, "net_revenue_delta": -460.82, "net_revenue_change_pct": -19.75, "active_customers_cur": 9, "active_customers_cmp": 8, "orders_cur": 12, "orders_cmp": 18, "return_rate_cur_pct": 3.14}], "pareto": {"labels": ["20495", "20346", "20529", "20522", "20465", "20487", "20454", "20250", "20531", "20352", "20439", "20515", "20239", "20213", "20255"], "descriptions": ["RED STORAGE SIGN", "LARGE PAPER WATER BOTTLE", "GREEN STORAGE LUNCH BAG", "WHITE STORAGE CANDLE PLATE", "WHITE STORAGE NAPKINS", "SMALL STORAGE LUNCH BAG", "BLUE STORAGE CAKE STAND", "RED LANTERN JAR", "GREEN STORAGE DOORSTOP", "GREEN PAPER CANDLE PLATE", "ANTIQUE VINTAGE DOORSTOP", "CREAM STORAGE NOTEBOOK", "LARGE LANTERN JAR", "PINK LANTERN MUG", "WHITE LANTERN CLOCK"], "revenue": [17981.18, 13426.92, 8872.9, 8547.71, 8498.96, 8254.31, 7721.41, 7273.13, 7182.32, 6924.67, 6892.48, 5805.12, 5128.38, 4979.81, 4510.38], "cumulative": [6.35, 11.1, 14.23, 17.25, 20.26, 23.17, 25.9, 28.47, 31.01, 33.46, 35.89, 37.94, 39.76, 41.51, 43.11]}, "cohort": {"cohorts": ["2010-07", "2010-08", "2010-09", "2010-10", "2010-11", "2010-12", "2011-01", "2011-02", "2011-03", "2011-04", "2011-05", "2011-06", "2011-07", "2011-08"], "offsets": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], "values": [[100.0, 48.11, 55.66, 53.77, 55.66, 49.06, 33.02, 25.47, 36.79, 29.25, 33.02, 24.53, 24.53], [100.0, 51.35, 56.76, 52.25, 47.75, 29.73, 27.93, 20.72, 23.42, 20.72, 19.82, 13.51, 13.51], [100.0, 58.77, 58.77, 57.02, 28.07, 30.7, 31.58, 28.95, 26.32, 20.18, 21.93, 19.3, 18.42], [100.0, 69.11, 59.35, 34.96, 34.15, 33.33, 32.52, 33.33, 28.46, 25.2, 23.58, 20.33, 26.02], [100.0, 62.12, 34.85, 32.58, 45.45, 36.36, 31.82, 32.58, 31.82, 25.76, 23.48, 29.55, 26.52], [100.0, 43.93, 40.19, 40.19, 37.38, 34.58, 34.58, 27.1, 20.56, 25.23, 24.3, 19.63, 8.41], [100.0, 49.15, 40.68, 42.37, 37.29, 35.59, 37.29, 18.64, 20.34, 20.34, 23.73, 8.47, null], [100.0, 54.43, 46.84, 41.77, 39.24, 34.18, 20.25, 29.11, 30.38, 27.85, 7.59, null, null], [100.0, 52.56, 51.28, 43.59, 41.03, 29.49, 29.49, 28.21, 21.79, 11.54, null, null, null], [100.0, 60.56, 46.48, 45.07, 49.3, 39.44, 40.85, 38.03, 14.08, null, null, null, null], [100.0, 58.23, 46.84, 34.18, 46.84, 32.91, 30.38, 12.66, null, null, null, null, null], [100.0, 48.65, 48.65, 40.54, 43.24, 39.19, 13.51, null, null, null, null, null, null], [100.0, 47.06, 47.06, 41.18, 35.29, 19.12, null, null, null, null, null, null, null], [100.0, 46.38, 53.62, 47.83, 20.29, null, null, null, null, null, null, null, null]]}, "decliners": [{"stock_code": "20417", "description": "RED VINTAGE NOTEBOOK", "product_family": "VINTAGE", "net_revenue_cmp": 17737.49, "net_revenue_cur": 2575.59, "net_revenue_delta": -15161.9, "return_rate_cur_pct": 6.87}, {"stock_code": "20364", "description": "WHITE PAPER JAR", "product_family": "PAPER", "net_revenue_cmp": 17159.35, "net_revenue_cur": 2468.19, "net_revenue_delta": -14691.16, "return_rate_cur_pct": 1.05}, {"stock_code": "20055", "description": "RED GLASS SIGN", "product_family": "GLASS", "net_revenue_cmp": 12458.83, "net_revenue_cur": 1890.96, "net_revenue_delta": -10567.87, "return_rate_cur_pct": 12.08}, {"stock_code": "20529", "description": "GREEN STORAGE LUNCH BAG", "product_family": "STORAGE", "net_revenue_cmp": 15330.23, "net_revenue_cur": 8872.9, "net_revenue_delta": -6457.33, "return_rate_cur_pct": 5.06}, {"stock_code": "20531", "description": "GREEN STORAGE DOORSTOP", "product_family": "STORAGE", "net_revenue_cmp": 11171.87, "net_revenue_cur": 7182.32, "net_revenue_delta": -3989.55, "return_rate_cur_pct": 2.97}, {"stock_code": "20036", "description": "PINK GLASS CAKE STAND", "product_family": "GLASS", "net_revenue_cmp": 6284.75, "net_revenue_cur": 2561.49, "net_revenue_delta": -3723.26, "return_rate_cur_pct": 29.33}, {"stock_code": "20522", "description": "WHITE STORAGE CANDLE PLATE", "product_family": "STORAGE", "net_revenue_cmp": 11845.61, "net_revenue_cur": 8547.71, "net_revenue_delta": -3297.9, "return_rate_cur_pct": 2.97}, {"stock_code": "20352", "description": "GREEN PAPER CANDLE PLATE", "product_family": "PAPER", "net_revenue_cmp": 9982.34, "net_revenue_cur": 6924.67, "net_revenue_delta": -3057.67, "return_rate_cur_pct": 3.87}, {"stock_code": "20213", "description": "PINK LANTERN MUG", "product_family": "LANTERN", "net_revenue_cmp": 7763.99, "net_revenue_cur": 4979.81, "net_revenue_delta": -2784.18, "return_rate_cur_pct": 7.57}, {"stock_code": "20454", "description": "BLUE STORAGE CAKE STAND", "product_family": "STORAGE", "net_revenue_cmp": 10118.72, "net_revenue_cur": 7721.41, "net_revenue_delta": -2397.31, "return_rate_cur_pct": 3.74}], "dq": {"score": 99.12, "rows_read": 115207, "rows_quarantined": 823, "quarantine_rate": 0.714, "rules": [{"rule_id": "DQ001", "name": "Invoice id present", "dimension": "completeness", "severity": "blocker", "action": "quarantine", "weight": 5, "rows_checked": 115207, "rows_failed": 68, "fail_rate_pct": 0.059, "rationale": "A line without an invoice id cannot be attributed to an order, so neither order counts nor average order value can be computed from it."}, {"rule_id": "DQ002", "name": "Invoice date present and parseable", "dimension": "validity", "severity": "blocker", "action": "quarantine", "weight": 5, "rows_checked": 115207, "rows_failed": 57, "fail_rate_pct": 0.0495, "rationale": "Every KPI in this project is time sliced. A line without a timestamp cannot be assigned to a period."}, {"rule_id": "DQ003", "name": "Stock code present", "dimension": "completeness", "severity": "major", "action": "quarantine", "weight": 3, "rows_checked": 115207, "rows_failed": 45, "fail_rate_pct": 0.0391, "rationale": "Product level analysis and the product dimension both key on stock code."}, {"rule_id": "DQ004", "name": "Quantity is not zero", "dimension": "validity", "severity": "major", "action": "quarantine", "weight": 3, "rows_checked": 115207, "rows_failed": 138, "fail_rate_pct": 0.1198, "rationale": "A zero quantity line carries no revenue and no unit. It is almost always an artefact of an editing step in the source system."}, {"rule_id": "DQ005", "name": "Unit price is not negative", "dimension": "validity", "severity": "blocker", "action": "quarantine", "weight": 5, "rows_checked": 115207, "rows_failed": 172, "fail_rate_pct": 0.1493, "rationale": "Negative prices in this source are adjustment postings, not sales. Leaving them in understates revenue in a way that cannot be reconciled."}, {"rule_id": "DQ006", "name": "Unit price is greater than zero for sellable products", "dimension": "validity", "severity": "major", "action": "flag", "weight": 3, "rows_checked": 112857, "rows_failed": 616, "fail_rate_pct": 0.5458, "rationale": "Zero priced product lines are giveaways, samples or data entry errors. They must not drag the average unit price down silently, so they are flagged and reported separately rather than removed."}, {"rule_id": "DQ007", "name": "Customer id present", "dimension": "completeness", "severity": "minor", "action": "flag", "weight": 1, "rows_checked": 115207, "rows_failed": 24358, "fail_rate_pct": 21.1428, "rationale": "Roughly a fifth of the lines in this source have no customer id. They are real revenue and must stay in revenue KPIs, but they cannot enter customer counts, retention or cohort analysis. They are routed to a guest segment."}, {"rule_id": "DQ008", "name": "Quantity within plausible range", "dimension": "accuracy", "severity": "minor", "action": "flag", "weight": 1, "rows_checked": 115207, "rows_failed": 45, "fail_rate_pct": 0.0391, "rationale": "Single lines of five figure quantities exist in this source and are genuine wholesale orders. They are not errors, but they distort averages, so they are flagged and can be excluded in sensitivity checks."}, {"rule_id": "DQ009", "name": "Unit price within plausible range", "dimension": "accuracy", "severity": "minor", "action": "flag", "weight": 1, "rows_checked": 115207, "rows_failed": 35, "fail_rate_pct": 0.0304, "rationale": "High value lines are mostly manual adjustments and postage corrections."}, {"rule_id": "DQ010", "name": "No exact duplicate transaction lines", "dimension": "uniqueness", "severity": "major", "action": "quarantine", "weight": 3, "rows_checked": 115207, "rows_failed": 344, "fail_rate_pct": 0.2986, "rationale": "Byte identical repeats of the same line are re-exports from the source system. Keeping them double counts revenue and units."}, {"rule_id": "DQ011", "name": "Cancellation lines carry a negative quantity", "dimension": "consistency", "severity": "major", "action": "flag", "weight": 3, "rows_checked": 3671, "rows_failed": 75, "fail_rate_pct": 2.043, "rationale": "An invoice id with the cancellation prefix should hold negative quantities. Where it does not, the return logic and the invoice prefix disagree and the line cannot be trusted for return rate reporting."}, {"rule_id": "DQ012", "name": "Product description present", "dimension": "completeness", "severity": "minor", "action": "fix", "weight": 1, "rows_checked": 115207, "rows_failed": 563, "fail_rate_pct": 0.4887, "rationale": "A missing description is repaired from the most frequent description seen for the same stock code, and only falls back to a placeholder when the stock code never carries a description."}, {"rule_id": "DQ013", "name": "Description normalised", "dimension": "consistency", "severity": "minor", "action": "fix", "weight": 1, "rows_checked": 115207, "rows_failed": 2305, "fail_rate_pct": 2.0007, "rationale": "The same product appears with trailing whitespace and mixed casing. Left untouched it splits one product into several rows in every group by."}]}, "reconciliation": [{"metric": "fact rows", "fact_value": 114384.0, "mart_value": 114384.0, "difference": 0.0}, {"metric": "net revenue", "fact_value": 4360194.74, "mart_value": 4360194.74, "difference": 0.0}, {"metric": "gross revenue", "fact_value": 4526325.43, "mart_value": 4526325.43, "difference": 0.0}, {"metric": "returns value", "fact_value": 166130.69, "mart_value": 166130.69, "difference": 0.0}, {"metric": "orders", "fact_value": 27751.0, "mart_value": 27751.0, "difference": 0.0}, {"metric": "identified + guest = net revenue", "fact_value": 4360194.74, "mart_value": 4360194.74, "difference": 0.0}]};
+const CUR = D.meta.currency;
+
+const fmt = (v, d = 0) => v === null || v === undefined || isNaN(v)
+  ? "n/a" : Number(v).toLocaleString("en-GB", {minimumFractionDigits: d, maximumFractionDigits: d});
+const money = v => fmt(v, 0);
+const pct = (v, d = 1) => v === null || v === undefined || isNaN(v) ? "n/a" : Number(v).toFixed(d) + "%";
+
+const LAYOUT = {
+  margin: {l: 62, r: 24, t: 16, b: 48},
+  height: 340,
+  paper_bgcolor: "rgba(0,0,0,0)",
+  plot_bgcolor: "rgba(0,0,0,0)",
+  font: {family: "-apple-system, Segoe UI, Inter, Roboto, sans-serif", size: 12, color: P.ink},
+  xaxis: {gridcolor: P.line, zerolinecolor: P.line},
+  yaxis: {gridcolor: P.line, zerolinecolor: P.line},
+  legend: {orientation: "h", y: -0.22, x: 0},
+  hovermode: "x unified"
+};
+const CONFIG = {displayModeBar: false, responsive: true};
+
+/* ---- cards ---- */
+document.getElementById("cards").innerHTML = D.cards.map(c => {
+  const cls = c.delta.good === null ? "flat" : (c.delta.good ? "up" : "down");
+  return `<div class="card">
+    <div class="lbl">${c.label}</div>
+    <div class="val">${c.value}<span>${c.unit}</span></div>
+    <div class="dlt ${cls}">${c.delta.text}</div>
+    <div class="note">${c.note}</div>
+  </div>`;
+}).join("");
+
+/* ---- 1. trend ---- */
+(function () {
+  const t = D.trend;
+  const colours = t.is_complete.map(c => c ? P.accent : "#cbd5e1");
+  Plotly.newPlot("chart-trend", [
+    {
+      type: "bar", name: "Net revenue", x: t.labels, y: t.net_revenue,
+      marker: {color: colours},
+      hovertemplate: "%{x}<br>Net revenue " + CUR + " %{y:,.0f}<extra></extra>"
+    },
+    {
+      type: "scatter", mode: "lines", name: "Return rate (right axis)",
+      x: t.labels, y: t.return_rate, yaxis: "y2",
+      line: {color: P.bad, width: 2},
+      hovertemplate: "Return rate %{y:.2f}%<extra></extra>"
+    }
+  ], Object.assign({}, LAYOUT, {
+    height: 380,
+    yaxis: Object.assign({}, LAYOUT.yaxis, {title: "Net revenue (" + CUR + ")"}),
+    yaxis2: {overlaying: "y", side: "right", title: "Return rate", ticksuffix: "%",
+             gridcolor: "rgba(0,0,0,0)", rangemode: "tozero"},
+    xaxis: Object.assign({}, LAYOUT.xaxis, {tickangle: -45})
+  }), CONFIG);
+})();
+
+/* ---- 2. waterfall ---- */
+(function () {
+  const w = D.waterfall;
+  const x = [D.meta.comparison_label].concat(w.labels).concat([D.meta.current_label]);
+  const measure = ["absolute"].concat(w.labels.map(() => "relative")).concat(["total"]);
+  const y = [w.start].concat(w.contributions).concat([0]);
+  const text = ["", ...w.contributions.map(v => (v >= 0 ? "+" : "") + money(v)), ""];
+  Plotly.newPlot("chart-waterfall", [{
+    type: "waterfall", orientation: "v", x: x, y: y, measure: measure,
+    text: text, textposition: "outside",
+    connector: {line: {color: P.line}},
+    increasing: {marker: {color: P.good}},
+    decreasing: {marker: {color: P.bad}},
+    totals: {marker: {color: P.ink}},
+    hovertemplate: "%{x}<br>" + CUR + " %{y:,.0f}<extra></extra>"
+  }], Object.assign({}, LAYOUT, {
+    height: 400, hovermode: "closest",
+    yaxis: Object.assign({}, LAYOUT.yaxis, {title: "Net revenue, identified customers (" + CUR + ")"}),
+    xaxis: Object.assign({}, LAYOUT.xaxis, {tickangle: -20})
+  }), CONFIG);
+
+  const b = w.bridge;
+  document.getElementById("bridge").innerHTML = `
+    <table style="margin-top:14px">
+      <thead><tr><th class="l">Reconciliation of the decomposition</th><th>${CUR}</th></tr></thead>
+      <tbody>
+        <tr><td class="l">Change in net revenue, all customers</td><td>${money(b.net_revenue_delta)}</td></tr>
+        <tr><td class="l">of which identified customers (decomposed above)</td><td>${money(b.identified_delta)}</td></tr>
+        <tr><td class="l">of which guest orders, no customer id</td><td>${money(b.guest_delta)}</td></tr>
+        <tr><td class="l">KPI tree rounding residual</td><td>${money(b.tree_residual)}</td></tr>
+      </tbody>
+    </table>`;
+})();
+
+/* ---- 3. returns trend ---- */
+(function () {
+  const r = D.returns_trend;
+  const traces = r.families.map((fam, i) => ({
+    type: "scatter", mode: "lines", name: fam,
+    x: r.series[fam].labels, y: r.series[fam].rate,
+    line: {width: 2},
+    hovertemplate: fam + " %{y:.2f}%<extra></extra>"
+  }));
+  Plotly.newPlot("chart-returns", traces, Object.assign({}, LAYOUT, {
+    yaxis: Object.assign({}, LAYOUT.yaxis, {title: "Return rate", ticksuffix: "%"}),
+    xaxis: Object.assign({}, LAYOUT.xaxis, {tickangle: -45})
+  }), CONFIG);
+
+  const rows = r.family_table.map(f => `<tr>
+      <td class="l">${f.product_family}</td>
+      <td>${money(f.gross_revenue_cur)}</td>
+      <td>${pct(f.return_rate_cmp_pct, 2)}</td>
+      <td>${pct(f.return_rate_cur_pct, 2)}</td>
+      <td style="color:${f.excess_returns_value > 0 ? P.bad : P.muted}">${money(f.excess_returns_value)}</td>
+    </tr>`).join("");
+  document.getElementById("tbl-returns").innerHTML =
+    `<thead><tr><th class="l">Family</th><th>Gross rev.</th><th>Rate ${D.meta.comparison_label}</th>
+     <th>Rate ${D.meta.current_label}</th><th>Excess returns</th></tr></thead><tbody>${rows}</tbody>`;
+})();
+
+/* ---- 5. country ---- */
+(function () {
+  const c = D.countries.slice().sort((a, b) => a.net_revenue_delta - b.net_revenue_delta);
+  Plotly.newPlot("chart-country", [{
+    type: "bar", orientation: "h",
+    x: c.map(d => d.net_revenue_delta),
+    y: c.map(d => d.country),
+    marker: {color: c.map(d => d.net_revenue_delta >= 0 ? P.good : P.bad)},
+    hovertemplate: "%{y}<br>Change " + CUR + " %{x:,.0f}<extra></extra>"
+  }], Object.assign({}, LAYOUT, {
+    height: 360, hovermode: "closest",
+    margin: {l: 120, r: 24, t: 16, b: 48},
+    xaxis: Object.assign({}, LAYOUT.xaxis, {title: "Change in net revenue (" + CUR + ")"})
+  }), CONFIG);
+})();
+
+/* ---- 6. pareto ---- */
+(function () {
+  const p = D.pareto;
+  Plotly.newPlot("chart-pareto", [
+    {
+      type: "bar", name: "Net revenue", x: p.labels, y: p.revenue,
+      marker: {color: P.accent}, customdata: p.descriptions,
+      hovertemplate: "%{customdata}<br>" + CUR + " %{y:,.0f}<extra></extra>"
+    },
+    {
+      type: "scatter", mode: "lines+markers", name: "Cumulative share",
+      x: p.labels, y: p.cumulative, yaxis: "y2",
+      line: {color: P.warn, width: 2}, marker: {size: 5},
+      hovertemplate: "Cumulative %{y:.1f}%<extra></extra>"
+    }
+  ], Object.assign({}, LAYOUT, {
+    height: 360,
+    yaxis: Object.assign({}, LAYOUT.yaxis, {title: "Net revenue (" + CUR + ")"}),
+    yaxis2: {overlaying: "y", side: "right", ticksuffix: "%", range: [0, 100],
+             gridcolor: "rgba(0,0,0,0)"},
+    xaxis: Object.assign({}, LAYOUT.xaxis, {tickangle: -45, type: "category"})
+  }), CONFIG);
+})();
+
+/* ---- 7. cohort heatmap ---- */
+(function () {
+  const c = D.cohort;
+  if (!c.cohorts.length) { document.getElementById("chart-cohort").innerHTML =
+    '<p class="lead">Not enough cohort history in this source to draw a retention grid.</p>'; return; }
+  Plotly.newPlot("chart-cohort", [{
+    type: "heatmap", z: c.values, x: c.offsets, y: c.cohorts,
+    colorscale: [[0, "#f8fafc"], [0.35, "#99f6e4"], [1, P.accent]],
+    hoverongaps: false, colorbar: {title: "%", thickness: 12, len: 0.8},
+    hovertemplate: "Cohort %{y}<br>+%{x} months<br>%{z:.1f}% still active<extra></extra>"
+  }], Object.assign({}, LAYOUT, {
+    height: 400, hovermode: "closest",
+    margin: {l: 78, r: 24, t: 16, b: 48},
+    xaxis: Object.assign({}, LAYOUT.xaxis, {title: "Months since first order", dtick: 1}),
+    yaxis: Object.assign({}, LAYOUT.yaxis, {title: "Acquisition cohort", autorange: "reversed"})
+  }), CONFIG);
+})();
+
+/* ---- 8. decliners ---- */
+(function () {
+  const rows = D.decliners.map(d => `<tr>
+      <td class="l">${d.stock_code}</td>
+      <td class="l">${d.description}</td>
+      <td class="l">${d.product_family}</td>
+      <td>${money(d.net_revenue_cmp)}</td>
+      <td>${money(d.net_revenue_cur)}</td>
+      <td style="color:${P.bad}">${money(d.net_revenue_delta)}</td>
+      <td>${pct(d.return_rate_cur_pct, 1)}</td>
+    </tr>`).join("");
+  document.getElementById("tbl-decliners").innerHTML =
+    `<thead><tr><th class="l">Stock code</th><th class="l">Description</th><th class="l">Family</th>
+      <th>${D.meta.comparison_label}</th><th>${D.meta.current_label}</th><th>Change</th>
+      <th>Return rate</th></tr></thead><tbody>${rows}</tbody>`;
+})();
+
+/* ---- 9. data quality + reconciliation ---- */
+(function () {
+  const rows = D.dq.rules.map(r => {
+    const cls = r.rows_failed > 0 ? r.severity : "ok";
+    return `<tr>
+      <td class="l">${r.rule_id}</td>
+      <td class="l">${r.name}</td>
+      <td class="l">${r.dimension}</td>
+      <td class="l"><span class="pill ${cls}">${r.severity}</span></td>
+      <td class="l">${r.action}</td>
+      <td>${fmt(r.rows_checked)}</td>
+      <td>${fmt(r.rows_failed)}</td>
+      <td>${pct(r.fail_rate_pct, 2)}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById("tbl-dq").innerHTML =
+    `<thead><tr><th class="l">Rule</th><th class="l">Check</th><th class="l">Dimension</th>
+      <th class="l">Severity</th><th class="l">Action</th><th>Checked</th><th>Failed</th>
+      <th>Rate</th></tr></thead><tbody>${rows}</tbody>`;
+
+  const rrows = D.reconciliation.map(r => `<tr>
+      <td class="l">${r.metric}</td>
+      <td>${fmt(r.fact_value, 2)}</td>
+      <td>${fmt(r.mart_value, 2)}</td>
+      <td style="color:${Math.abs(r.difference) > 0.05 ? P.bad : P.good}">${fmt(r.difference, 2)}</td>
+    </tr>`).join("");
+  document.getElementById("tbl-recon").innerHTML =
+    `<thead><tr><th class="l">Check</th><th>Fact table</th><th>KPI mart</th>
+      <th>Difference</th></tr></thead><tbody>${rrows}</tbody>`;
+})();
+</script>
+</body>
+</html>

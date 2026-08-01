@@ -1,0 +1,14 @@
+# Core - the pipeline runs with nothing but these three.
+pandas>=2.0
+numpy>=1.24
+PyYAML>=6.0
+
+# Reading the real UCI workbook (.xlsx). Not needed for the offline demo.
+openpyxl>=3.1
+
+# Recommended warehouse engine. If it is not installed the pipeline falls back
+# to SQLite from the standard library and runs the identical SQL.
+duckdb>=0.10
+
+# Optional: the test suite is stdlib unittest, so pytest is a convenience only.
+# pytest>=8.0

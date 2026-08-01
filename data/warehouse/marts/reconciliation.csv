@@ -1,0 +1,7 @@
+metric,fact_value,mart_value,difference
+fact rows,114384.0,114384.0,0.0
+net revenue,4360194.74,4360194.74,0.0
+gross revenue,4526325.43,4526325.43,0.0
+returns value,166130.69,166130.69,0.0
+orders,27751.0,27751.0,0.0
+identified + guest = net revenue,4360194.74,4360194.74,0.0

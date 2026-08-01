@@ -1,0 +1,49 @@
+{
+  "project": "Operational Analytics & KPI Steering",
+  "owner": "Serkan Akdemir",
+  "currency": "GBP",
+  "version": "1.0.0",
+  "generated_at": "2026-08-01 16:08 UTC",
+  "source_label": "SYNTHETIC DEMO SAMPLE",
+  "is_synthetic": true,
+  "rows_read": 115207,
+  "dq_score": 99.12,
+  "rows_quarantined": 823,
+  "quarantine_rate": 0.714,
+  "periods": {
+    "current": {
+      "month_key": 201111,
+      "label": "2011-11",
+      "is_complete": true
+    },
+    "comparison": {
+      "month_key": 201011,
+      "label": "2010-11",
+      "is_complete": true
+    },
+    "mode": "yoy"
+  },
+  "bridge": {
+    "net_revenue_current": 283004.65,
+    "net_revenue_comparison": 376904.79,
+    "net_revenue_delta": -93900.14,
+    "identified_delta": -58763.61,
+    "guest_delta": -35136.53,
+    "tree_residual": 4.05
+  },
+  "top_n": 15,
+  "retention_horizon": 3,
+  "mart_row_counts": {
+    "kpi_monthly": 25,
+    "products": 121,
+    "returns_family": 7,
+    "returns_monthly": 175,
+    "cohort": 325,
+    "countries": 12,
+    "concentration": 639,
+    "reconciliation": 6,
+    "dq_report": 13,
+    "decomposition": 5,
+    "chain": 5
+  }
+}

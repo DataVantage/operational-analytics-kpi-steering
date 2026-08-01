@@ -1,0 +1,175 @@
+# ---------------------------------------------------------------------------
+# Declarative data quality rule set.
+#
+# Every rule is evaluated against the staging table before the star schema is
+# built. Rules do not silently delete data. Each rule declares an `action`:
+#
+#   flag       -> row stays in the warehouse, boolean flag column is set
+#   quarantine -> row is moved to the quarantine table and excluded from KPIs
+#   fix        -> row is repaired by a documented, deterministic transformation
+#
+# `severity` drives the data quality score:
+#   blocker  weight 5 | major weight 3 | minor weight 1
+#
+# The score is: 100 * (1 - weighted_failed_rows / weighted_total_checked)
+# ---------------------------------------------------------------------------
+
+rules:
+
+  - id: DQ001
+    name: "Invoice id present"
+    dimension: completeness
+    severity: blocker
+    action: quarantine
+    column: invoice_no
+    check: not_null
+    rationale: >
+      A line without an invoice id cannot be attributed to an order, so neither
+      order counts nor average order value can be computed from it.
+
+  - id: DQ002
+    name: "Invoice date present and parseable"
+    dimension: validity
+    severity: blocker
+    action: quarantine
+    column: invoice_ts
+    check: not_null
+    rationale: >
+      Every KPI in this project is time sliced. A line without a timestamp
+      cannot be assigned to a period.
+
+  - id: DQ003
+    name: "Stock code present"
+    dimension: completeness
+    severity: major
+    action: quarantine
+    column: stock_code
+    check: not_null
+    rationale: >
+      Product level analysis and the product dimension both key on stock code.
+
+  - id: DQ004
+    name: "Quantity is not zero"
+    dimension: validity
+    severity: major
+    action: quarantine
+    column: quantity
+    check: not_equal
+    value: 0
+    rationale: >
+      A zero quantity line carries no revenue and no unit. It is almost always
+      an artefact of an editing step in the source system.
+
+  - id: DQ005
+    name: "Unit price is not negative"
+    dimension: validity
+    severity: blocker
+    action: quarantine
+    column: unit_price
+    check: greater_equal
+    value: 0
+    rationale: >
+      Negative prices in this source are adjustment postings, not sales. Leaving
+      them in understates revenue in a way that cannot be reconciled.
+
+  - id: DQ006
+    name: "Unit price is greater than zero for sellable products"
+    dimension: validity
+    severity: major
+    action: flag
+    column: unit_price
+    check: greater_than
+    value: 0
+    scope: product_lines_only
+    flag_column: is_zero_price
+    rationale: >
+      Zero priced product lines are giveaways, samples or data entry errors.
+      They must not drag the average unit price down silently, so they are
+      flagged and reported separately rather than removed.
+
+  - id: DQ007
+    name: "Customer id present"
+    dimension: completeness
+    severity: minor
+    action: flag
+    column: customer_id
+    check: not_null
+    flag_column: is_guest_customer
+    rationale: >
+      Roughly a fifth of the lines in this source have no customer id. They are
+      real revenue and must stay in revenue KPIs, but they cannot enter customer
+      counts, retention or cohort analysis. They are routed to a guest segment.
+
+  - id: DQ008
+    name: "Quantity within plausible range"
+    dimension: accuracy
+    severity: minor
+    action: flag
+    column: quantity
+    check: abs_less_equal
+    value_from: business_rules.quantity_outlier_threshold
+    flag_column: is_quantity_outlier
+    rationale: >
+      Single lines of five figure quantities exist in this source and are
+      genuine wholesale orders. They are not errors, but they distort averages,
+      so they are flagged and can be excluded in sensitivity checks.
+
+  - id: DQ009
+    name: "Unit price within plausible range"
+    dimension: accuracy
+    severity: minor
+    action: flag
+    column: unit_price
+    check: less_equal
+    value_from: business_rules.price_outlier_threshold
+    flag_column: is_price_outlier
+    rationale: >
+      High value lines are mostly manual adjustments and postage corrections.
+
+  - id: DQ010
+    name: "No exact duplicate transaction lines"
+    dimension: uniqueness
+    severity: major
+    action: quarantine
+    check: duplicate_rows
+    key: [invoice_no, stock_code, quantity, unit_price, invoice_ts]
+    rationale: >
+      Byte identical repeats of the same line are re-exports from the source
+      system. Keeping them double counts revenue and units.
+
+  - id: DQ011
+    name: "Cancellation lines carry a negative quantity"
+    dimension: consistency
+    severity: major
+    action: flag
+    check: cancellation_consistency
+    flag_column: is_inconsistent_cancellation
+    rationale: >
+      An invoice id with the cancellation prefix should hold negative
+      quantities. Where it does not, the return logic and the invoice prefix
+      disagree and the line cannot be trusted for return rate reporting.
+
+  - id: DQ012
+    name: "Product description present"
+    dimension: completeness
+    severity: minor
+    action: fix
+    column: description
+    check: not_null
+    fix: fill_from_stock_code_mode
+    rationale: >
+      A missing description is repaired from the most frequent description seen
+      for the same stock code, and only falls back to a placeholder when the
+      stock code never carries a description.
+
+  - id: DQ013
+    name: "Description normalised"
+    dimension: consistency
+    severity: minor
+    action: fix
+    column: description
+    check: whitespace_and_case
+    fix: trim_and_upper
+    rationale: >
+      The same product appears with trailing whitespace and mixed casing. Left
+      untouched it splits one product into several rows in every group by.

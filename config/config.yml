@@ -1,0 +1,65 @@
+# ---------------------------------------------------------------------------
+# Operational Analytics & KPI Steering - pipeline configuration
+# Every behavioural choice of the pipeline lives here, not in the code.
+# ---------------------------------------------------------------------------
+
+project:
+  name: "Operational Analytics & KPI Steering"
+  owner: "Serkan Akdemir"
+  currency: "GBP"
+
+source:
+  # Primary source: UCI Machine Learning Repository, "Online Retail II"
+  # https://archive.ics.uci.edu/dataset/502/online+retail+ii
+  name: "UCI Online Retail II"
+  url: "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip"
+  raw_dir: "data/raw"
+  excel_file: "online_retail_II.xlsx"
+  sheets: ["Year 2009-2010", "Year 2010-2011"]
+  # Offline fallback used by CI and by `make demo`. Same schema, synthetic rows.
+  sample_csv: "data/sample/online_retail_II_sample.csv.gz"
+
+warehouse:
+  # duckdb = recommended (columnar, fast). sqlite = zero-install fallback.
+  # "auto" picks duckdb when importable, otherwise sqlite.
+  engine: "auto"
+  path: "data/warehouse/retail.duckdb"
+  sqlite_path: "data/warehouse/retail.sqlite"
+
+business_rules:
+  # An invoice id starting with this prefix is a cancellation document.
+  cancellation_prefix: "C"
+  # Stock codes that are not sellable products but postage, manual
+  # adjustments, bank charges etc. They are excluded from product-level
+  # analysis but kept in net revenue, because they hit the P&L.
+  non_product_stock_codes:
+    ["POST", "DOT", "D", "M", "C2", "CRUK", "BANK CHARGES", "AMAZONFEE",
+     "S", "B", "PADS", "GIFT", "TEST001", "TEST002", "ADJUST", "ADJUST2"]
+  # A line with quantity < 0 is treated as a return / credit.
+  return_quantity_threshold: 0
+  # Lines above this quantity are flagged as suspicious, not deleted.
+  quantity_outlier_threshold: 1000
+  # Unit prices above this are flagged as suspicious, not deleted.
+  price_outlier_threshold: 1000.0
+  # Customers without an id cannot be tracked over time -> "guest" segment.
+  guest_customer_key: -1
+
+analysis:
+  # "auto" = last month with a complete set of days in the data.
+  current_period: "auto"
+  # "yoy" = same month one year earlier. "pop" = the preceding month.
+  comparison_mode: "yoy"
+  # Number of items shown in Pareto / top-N tables.
+  top_n: 15
+  # A customer counts as active in a period if they placed >= 1 net order.
+  # A customer counts as retained in month m if active in m and in m-1..m-3.
+  retention_window_months: 3
+  # Products need at least this much gross revenue in the period before their
+  # return rate is reported, to avoid ratios built on two transactions.
+  min_revenue_for_return_rate: 500.0
+
+output:
+  marts_dir: "data/warehouse/marts"
+  dashboard_file: "dashboard/index.html"
+  findings_file: "docs/05_findings_and_recommendations.md"
+  run_log: "data/warehouse/run_log.json"
