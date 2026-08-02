@@ -2,7 +2,7 @@ PYTHON  ?= python3
 export PYTHONPATH := src
 
 .DEFAULT_GOAL := help
-.PHONY: help demo data run sample test lint info clean distclean all
+.PHONY: help demo data run sample test compile lint info clean distclean all
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -26,8 +26,11 @@ info:  ## Show what is currently in the warehouse
 test:  ## Run the test suite
 	$(PYTHON) -m unittest discover -s tests -v
 
-lint:  ## Compile-check every source file
+compile:  ## Check that all Python files compile
 	$(PYTHON) -m compileall -q src tests
+
+lint:  ## Run Ruff static analysis
+	$(PYTHON) -m ruff check src tests
 
 all: sample run test  ## Rebuild everything from scratch and verify it
 
