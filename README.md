@@ -225,6 +225,10 @@ If the fact table and the KPI mart disagree by more than 0.05, the pipeline rais
 | Visualisation — self-contained interactive dashboard, no infrastructure | [`src/oakpi/dashboard.py`](src/oakpi/dashboard.py) |
 
 ---
+**Companion project:** [customer-service-case-management](https://github.com/DataVantage/customer-service-case-management)
+answers the same kind of question from the requirements-engineering side —
+as-is/to-be process, user stories and a traceability matrix that fails the
+build on a broken link, on a real help-desk event log.
 
 ## Source data
 
