@@ -6,7 +6,6 @@ Raw transactions → governed data quality layer → dimensional model → KPI m
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)](https://www.python.org/)
 [![SQL](https://img.shields.io/badge/SQL-DuckDB%20%7C%20SQLite-4B8BBE)](https://duckdb.org/)
-[![Tests](https://img.shields.io/badge/tests-47%20passing-15803d)](tests/)
 [![Licence](https://img.shields.io/badge/licence-MIT-64748b)](LICENSE)
 [![CI](https://github.com/DataVantage/operational-analytics-kpi-steering/actions/workflows/ci.yml/badge.svg)](https://github.com/DataVantage/operational-analytics-kpi-steering/actions/workflows/ci.yml)
 
